@@ -1,0 +1,105 @@
+<view class="container">
+  <view class="page-header">
+    <text class="page-title">我的花园</text>
+    <text class="page-subtitle">用心培育每一株植物</text>
+  </view>
+
+  <view class="garden-stats">
+    <view class="stat-item">
+      <text class="stat-value">{{userData.totalTomatoes}}</text>
+      <text class="stat-label">总番茄数</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{unlockedCount}}</text>
+      <text class="stat-label">已解锁植物</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{userData.gardenLevel}}</text>
+      <text class="stat-label">花园等级</text>
+    </view>
+  </view>
+
+  <view class="current-plant" v-if="currentPlant">
+    <view class="plant-card" :class="{ wilted: currentPlant.isWilted }">
+      <view class="plant-header">
+        <text class="plant-emoji-large">{{getPlantEmoji(currentPlant)}}</text>
+        <view class="plant-info">
+          <text class="plant-name">{{currentPlant.name}}</text>
+          <text class="plant-stage-badge">{{plantStages[currentPlant.stage]}}</text>
+        </view>
+      </view>
+
+      <view class="plant-progress">
+        <view class="progress-section">
+          <text class="progress-label">成长进度</text>
+          <view class="progress-bar-large">
+            <view class="progress-fill-large" :style="{ width: growthProgress + '%' }"></view>
+          </view>
+          <text class="progress-text">{{currentPlant.currentWater}} / {{currentPlant.totalWaterNeeded}} 次浇水</text>
+        </view>
+
+        <view class="progress-section">
+          <text class="progress-label">开花倒计时</text>
+          <view class="progress-bar-large">
+            <view class="progress-fill-bloom" :style="{ width: bloomProgress + '%' }"></view>
+          </view>
+          <text class="progress-text">{{formatBloomTime(currentPlant.focusMinutes)}} / {{currentPlant.bloomTime}} 分钟</text>
+        </view>
+      </view>
+
+      <view class="plant-status">
+        <view class="status-item" :class="{ active: !currentPlant.isWilted }">
+          <text class="status-icon">🌿</text>
+          <text class="status-text">{{currentPlant.isWilted ? '已枯萎' : '生长中'}}</text>
+        </view>
+        <view class="status-item" :class="{ active: currentPlant.isBloomed }">
+          <text class="status-icon">🌸</text>
+          <text class="status-text">{{currentPlant.isBloomed ? '已开花' : '未开花'}}</text>
+        </view>
+      </view>
+
+      <button v-if="currentPlant.isWilted" class="btn-primary" bindtap="startNewPlant">
+        🌱 重新种植
+      </button>
+    </view>
+  </view>
+
+  <view class="no-plant" v-else>
+    <text class="no-plant-emoji">🌱</text>
+    <text class="no-plant-text">还没有植物</text>
+    <text class="no-plant-hint">开始专注就能种下第一颗种子哦～</text>
+    <button class="btn-primary" bindtap="goToFocus">
+      去专注
+    </button>
+  </view>
+
+  <view class="history-section">
+    <text class="section-title">培育记录</text>
+    <view class="history-list" v-if="plantRecords.length > 0">
+      <view class="history-item" v-for="(record, index) in plantRecords" :key="index">
+        <text class="record-emoji">{{getPlantEmoji(record)}}</text>
+        <view class="record-info">
+          <text class="record-name">{{record.name}}</text>
+          <text class="record-stage">成长至 {{plantStages[record.stage]}}</text>
+          <text class="record-date">{{formatDate(record.createdAt)}}</text>
+        </view>
+        <text class="record-status" :class="{ bloomed: record.isBloomed }">
+          {{record.isBloomed ? '🌸' : '🌿'}}
+        </text>
+      </view>
+    </view>
+    <view class="empty-history" v-else>
+      <text class="empty-text">暂无培育记录</text>
+    </view>
+  </view>
+
+  <view class="garden-tips">
+    <text class="tips-title">💡 小贴士</text>
+    <view class="tips-list">
+      <text class="tip">完成25分钟专注 = 浇水1次</text>
+      <text class="tip">连续4次浇水 = 植物升级</text>
+      <text class="tip">专注时长累计达到开花时间可能绽放</text>
+      <text class="tip">中途放弃会导致植物枯萎</text>
+    </view>
+  </view>
+</view>

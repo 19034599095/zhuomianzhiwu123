@@ -1,0 +1,82 @@
+<view class="container">
+  <view class="page-header">
+    <text class="page-title">好友排行榜</text>
+    <text class="page-subtitle">看看谁的花园最茂盛</text>
+  </view>
+
+  <view class="tabs">
+    <view class="tab-item" :class="{ active: currentTab === 'tomatoes' }" bindtap="setTab('tomatoes')">
+      <text class="tab-icon">🍅</text>
+      <text class="tab-text">今日番茄</text>
+    </view>
+    <view class="tab-item" :class="{ active: currentTab === 'plants' }" bindtap="setTab('plants')">
+      <text class="tab-icon">🌿</text>
+      <text class="tab-text">植物数量</text>
+    </view>
+    <view class="tab-item" :class="{ active: currentTab === 'level' }" bindtap="setTab('level')">
+      <text class="tab-icon">⭐</text>
+      <text class="tab-text">花园等级</text>
+    </view>
+  </view>
+
+  <view class="my-rank">
+    <view class="rank-badge" v-if="myRank <= 3">
+      <text class="rank-number">{{myRank}}</text>
+    </view>
+    <view class="rank-avatar">
+      <text class="avatar-emoji">👤</text>
+    </view>
+    <view class="my-info">
+      <text class="my-name">我</text>
+      <text class="my-score">{{myScore}}</text>
+    </view>
+    <view class="my-level">
+      <text>Lv.{{userData.gardenLevel}}</text>
+    </view>
+  </view>
+
+  <view class="ranking-list">
+    <view 
+      class="rank-item" 
+      v-for="(user, index) in rankingData" 
+      :key="index"
+      :class="{ top: index < 3, 'my-item': user.isMe }"
+    >
+      <view class="rank-position">
+        <view v-if="index === 0" class="medal gold">🥇</view>
+        <view v-else-if="index === 1" class="medal silver">🥈</view>
+        <view v-else-if="index === 2" class="medal bronze">🥉</view>
+        <text v-else class="rank-num">{{index + 1}}</text>
+      </view>
+      
+      <view class="rank-avatar">
+        <text class="avatar-emoji">{{user.avatar}}</text>
+      </view>
+      
+      <view class="rank-info">
+        <text class="rank-name">{{user.name}}</text>
+        <text class="rank-score">{{user.score}} {{scoreUnit}}</text>
+      </view>
+      
+      <view class="rank-plant">
+        <text>{{user.plant}}</text>
+      </view>
+      
+      <view class="rank-level">
+        <text>Lv.{{user.level}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-ranking" v-if="rankingData.length === 0">
+    <text class="empty-emoji">👥</text>
+    <text class="empty-text">暂无好友数据</text>
+    <text class="empty-hint">邀请好友一起专注吧～</text>
+  </view>
+
+  <view class="share-section">
+    <button class="btn-primary share-btn" bindtap="shareGarden">
+      <text>📤 分享我的花园</text>
+    </button>
+  </view>
+</view>

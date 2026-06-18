@@ -1,0 +1,83 @@
+<view class="container">
+  <view class="page-header">
+    <text class="page-title">植物图鉴</text>
+    <text class="page-subtitle">收集所有可爱的植物</text>
+    <view class="collection-progress">
+      <text class="progress-text">已收集 {{unlockedCount}} / {{totalPlants}}</text>
+      <view class="progress-bar">
+        <view class="progress-fill" :style="{ width: collectionProgress + '%' }"></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="filter-bar">
+    <view class="filter-item" :class="{ active: filterType === 'all' }" bindtap="setFilter('all')">
+      <text>全部</text>
+    </view>
+    <view class="filter-item" :class="{ active: filterType === 'unlocked' }" bindtap="setFilter('unlocked')">
+      <text>已解锁</text>
+    </view>
+    <view class="filter-item" :class="{ active: filterType === 'locked' }" bindtap="setFilter('locked')">
+      <text>未解锁</text>
+    </view>
+  </view>
+
+  <view class="plant-grid">
+    <view 
+      class="plant-card" 
+      :class="{ locked: !isUnlocked(plant), bloomed: plant.isBloomed }"
+      v-for="plant in filteredPlants" 
+      :key="plant.id"
+      bindtap="showPlantDetail"
+      :data-plant="plant"
+    >
+      <view class="plant-emoji-container">
+        <text class="plant-emoji">{{isUnlocked(plant) ? plant.emoji : '❓'}}</text>
+        <view v-if="isUnlocked(plant)" class="plant-glow" :style="{ background: plant.color }"></view>
+      </view>
+      <text class="plant-name">{{isUnlocked(plant) ? plant.name : '???'}}</text>
+      <view class="plant-info" v-if="isUnlocked(plant)">
+        <text class="bloom-time">开花时间: {{plant.minTime}}-{{plant.maxTime}}分钟</text>
+      </view>
+      <view class="lock-icon" v-else>
+        <text>🔒</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="modal-overlay" v-if="showDetail" bindtap="closeDetail">
+    <view class="modal-content detail-modal" catchtap="stopPropagation">
+      <view class="detail-header" v-if="selectedPlant">
+        <text class="detail-emoji">{{selectedPlant.emoji}}</text>
+        <text class="detail-name">{{selectedPlant.name}}</text>
+      </view>
+      
+      <view class="detail-info" v-if="selectedPlant">
+        <view class="info-item">
+          <text class="info-label">开花时间</text>
+          <text class="info-value">{{selectedPlant.minTime}} - {{selectedPlant.maxTime}} 分钟</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">获取方式</text>
+          <text class="info-value">完成专注随机解锁</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">植物特性</text>
+          <text class="info-value">{{getPlantDescription(selectedPlant)}}</text>
+        </view>
+      </view>
+
+      <view class="detail-tips">
+        <text class="tips-header">💡 培育小贴士</text>
+        <text class="tips-content">{{getPlantTips(selectedPlant)}}</text>
+      </view>
+
+      <button class="btn-secondary" bindtap="closeDetail">关闭</button>
+    </view>
+  </view>
+
+  <view class="empty-state" v-if="filteredPlants.length === 0">
+    <text class="empty-emoji">🔍</text>
+    <text class="empty-text">暂无符合条件的植物</text>
+  </view>
+</view>

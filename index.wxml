@@ -1,0 +1,120 @@
+<view class="container">
+  <view class="header">
+    <view class="today-stats">
+      <text class="stats-label">今日专注</text>
+      <text class="stats-value">{{userData.todayTomatoes}}</text>
+      <text class="stats-unit">个番茄</text>
+    </view>
+    <view class="garden-level">
+      <text class="level-label">花园等级</text>
+      <text class="level-value">Lv.{{userData.gardenLevel}}</text>
+    </view>
+  </view>
+
+  <view class="tomato-card">
+    <view class="timer-display">
+      <view class="timer-circle">
+        <view class="timer-inner" :style="{ background: timerGradient }">
+          <text class="timer-time">{{formatTime(timerSeconds)}}</text>
+          <text class="timer-label">{{currentMode === 'focus' ? '专注中' : (currentMode === 'shortBreak' ? '短休息' : '长休息')}}</text>
+        </view>
+      </view>
+      <view class="progress-ring" v-if="isRunning">
+        <view class="progress-ring-circle" :style="{ '--progress': progress }"></view>
+      </view>
+    </view>
+
+    <view class="timer-controls">
+      <button v-if="!isRunning" class="btn-primary start-btn" bindtap="startTimer">
+        {{isPaused ? '继续专注' : '开始专注'}}
+      </button>
+      <view v-else class="control-buttons">
+        <button class="btn-secondary" bindtap="pauseTimer">暂停</button>
+        <button class="btn-danger" bindtap="abortTimer">放弃</button>
+      </view>
+    </view>
+
+    <view class="tomato-progress">
+      <text class="progress-text">今日完成 {{userData.todayTomatoes}} / 4 个番茄</text>
+      <view class="progress-bar">
+        <view class="progress-fill" :style="{ width: (userData.todayTomatoes * 25) + '%' }"></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="plant-pet" v-if="currentPlant">
+    <view class="pet-container" :class="{ 'animate-shake': plantShaking }">
+      <text class="plant-emoji" :style="{ opacity: currentPlant.isWilted ? 0.5 : 1 }">
+        {{getPlantEmoji(currentPlant)}}
+      </text>
+      <view class="pet-status">
+        <text class="plant-name">{{currentPlant.name}}</text>
+        <text class="plant-stage">{{plantStages[currentPlant.stage]}}</text>
+      </view>
+      <view class="water-drops">
+        <text v-for="i in currentPlant.currentWater" :key="i" class="water-drop">💧</text>
+      </view>
+      <view v-if="showWaterEffect" class="water-effect">
+        <text class="drop">💧</text>
+        <text class="drop">💧</text>
+        <text class="drop">💧</text>
+      </view>
+      <view v-if="showCritEffect" class="crit-effect">
+        <text>暴击! +{{lastCritBonus}}</text>
+      </view>
+    </view>
+    <text v-if="petMessage" class="pet-message">{{petMessage}}</text>
+  </view>
+
+  <view class="action-buttons">
+    <button class="action-btn" bindtap="openWaterGame">
+      <text class="action-icon">🎮</text>
+      <text class="action-text">浇水小游戏</text>
+    </button>
+    <button class="action-btn" bindtap="openQuestion">
+      <text class="action-icon">❓</text>
+      <text class="action-text">植物百科</text>
+    </button>
+  </view>
+
+  <view class="modal-overlay" v-if="showWaterModal" bindtap="closeWaterModal">
+    <view class="modal-content water-modal" catchtap="stopPropagation">
+      <text class="modal-title">浇水小游戏</text>
+      <view class="game-container" bindtap="tapWater">
+        <view class="water-target" :style="{ left: targetX + 'px', top: targetY + 'px' }">
+          💧
+        </view>
+        <text class="game-score">得分: {{waterScore}}</text>
+      </view>
+      <button class="btn-primary" bindtap="closeWaterModal">结束游戏</button>
+    </view>
+  </view>
+
+  <view class="modal-overlay" v-if="showQuestionModal" bindtap="closeQuestionModal">
+    <view class="modal-content question-modal" catchtap="stopPropagation">
+      <text class="modal-title">植物百科问答</text>
+      <view class="question-card" v-if="currentQuestion">
+        <text class="question-text">{{currentQuestion.question}}</text>
+        <view class="options">
+          <button 
+            v-for="(option, index) in currentQuestion.options" 
+            :key="index" 
+            class="option-btn"
+            :class="{ correct: selectedAnswer === index && index === currentQuestion.answer, wrong: selectedAnswer === index && index !== currentQuestion.answer }"
+            :disabled="selectedAnswer !== null"
+            bindtap="selectAnswer"
+            :data-index="index"
+          >
+            {{option}}
+          </button>
+        </view>
+        <view v-if="selectedAnswer !== null" class="answer-result">
+          <text v-if="selectedAnswer === currentQuestion.answer" class="result correct">✓ 回答正确！获得额外浇水奖励</text>
+          <text v-else class="result wrong">✗ 回答错误，再接再厉</text>
+        </view>
+      </view>
+      <button class="btn-secondary" bindtap="nextQuestion" v-if="selectedAnswer !== null">下一题</button>
+      <button class="btn-secondary" bindtap="closeQuestionModal" v-else>关闭</button>
+    </view>
+  </view>
+</view>

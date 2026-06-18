@@ -1,0 +1,265 @@
+.container {
+  padding: 20rpx;
+  padding-bottom: 120rpx;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333333;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.page-subtitle {
+  font-size: 26rpx;
+  color: #999999;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.collection-progress {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(76, 175, 80, 0.1);
+}
+
+.progress-text {
+  font-size: 26rpx;
+  color: #666666;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.progress-bar {
+  height: 16rpx;
+  background: #e8f5e9;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #81C784 0%, #4CAF50 100%);
+  border-radius: 8rpx;
+  transition: width 0.5s ease;
+}
+
+.filter-bar {
+  display: flex;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 8rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(76, 175, 80, 0.1);
+}
+
+.filter-item {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: #666666;
+  transition: all 0.3s ease;
+}
+
+.filter-item.active {
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+  color: #ffffff;
+}
+
+.plant-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.plant-card {
+  width: calc(50% - 10rpx);
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(76, 175, 80, 0.1);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+}
+
+.plant-card:active {
+  transform: scale(0.98);
+}
+
+.plant-card.locked {
+  opacity: 0.6;
+}
+
+.plant-card.bloomed .plant-emoji {
+  animation: bounce 1s infinite;
+}
+
+.plant-emoji-container {
+  position: relative;
+  margin-bottom: 16rpx;
+}
+
+.plant-emoji {
+  font-size: 80rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.plant-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  opacity: 0.3;
+  filter: blur(20rpx);
+}
+
+.plant-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.plant-info {
+  background: #f8faf6;
+  border-radius: 12rpx;
+  padding: 12rpx;
+}
+
+.bloom-time {
+  font-size: 22rpx;
+  color: #666666;
+}
+
+.lock-icon {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  font-size: 24rpx;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.detail-modal {
+  background: #ffffff;
+  border-radius: 32rpx;
+  padding: 40rpx;
+  margin: 40rpx;
+  max-width: 600rpx;
+  width: 90%;
+}
+
+.detail-header {
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.detail-emoji {
+  font-size: 120rpx;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.detail-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.detail-info {
+  background: #f8faf6;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid #e0e0e0;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.info-value {
+  font-size: 26rpx;
+  color: #333333;
+  font-weight: 500;
+}
+
+.detail-tips {
+  background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.tips-header {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #E65100;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.tips-content {
+  font-size: 24rpx;
+  color: #666666;
+  line-height: 1.6;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60rpx;
+}
+
+.empty-emoji {
+  font-size: 80rpx;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999999;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10rpx); }
+}
