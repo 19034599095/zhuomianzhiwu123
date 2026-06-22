@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>桌面小花园 - 番茄钟</title>
+    <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f8f3; min-height: 100vh; }
+.app { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; position: relative; }
+.tab-bar { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; display: flex; background: white; padding: 8px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 100; }
+.tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px; color: #999; cursor: pointer; transition: all 0.3s; }
+.tab-item.active { color: #4CAF50; }
+.tab-icon { font-size: 24px; }
+.tab-text { font-size: 12px; margin-top: 4px; }
+.page { display: none; padding: 20px; padding-bottom: 80px; }
+.page.active { display: block; }
+.timer-section { text-align: center; padding: 30px 0; }
+.timer-circle { width: 280px; height: 280px; border-radius: 50%; background: linear-gradient(135deg, #fff 0%, #f8faf6 100%); box-shadow: 0 8px 32px rgba(76,175,80,0.2); margin: 0 auto; display: flex; align-items: center; justify-content: center; position: relative; }
+.timer-display { font-size: 48px; font-weight: bold; color: #2E7D32; }
+.timer-mode { font-size: 14px; color: #666; margin-top: 8px; }
+.timer-buttons { margin-top: 30px; display: flex; justify-content: center; gap: 16px; }
+.btn { padding: 14px 32px; border: none; border-radius: 30px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+.btn-primary { background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%); color: white; }
+.btn-secondary { background: #f0f0f0; color: #666; }
+.btn-small { padding: 10px 20px; font-size: 14px; }
+.plant-pet { text-align: center; margin-top: 20px; }
+.plant-emoji { font-size: 64px; animation: bounce 2s infinite; cursor: pointer; }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.plant-status { margin-top: 12px; font-size: 14px; color: #666; }
+.stats-bar { display: flex; justify-content: space-around; padding: 16px; background: #f8faf6; border-radius: 16px; margin-bottom: 20px; }
+.stat-item { text-align: center; }
+.stat-value { font-size: 24px; font-weight: bold; color: #4CAF50; }
+.stat-label { font-size: 12px; color: #999; margin-top: 4px; }
+.mini-games { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; padding-bottom: 20px; }
+.game-btn { flex: 1; min-width: calc(50% - 6px); padding: 16px; border: none; border-radius: 16px; font-size: 14px; cursor: pointer; transition: all 0.3s; }
+.game-btn:hover { transform: translateY(-2px); }
+.garden-page { text-align: center; }
+.garden-plant { font-size: 120px; margin: 30px 0; transition: all 0.3s; cursor: pointer; }
+.garden-plant.wilted { filter: grayscale(70%); transform: rotate(-5deg); }
+.garden-plant.bloomed { animation: bloom 1s ease; }
+@keyframes bloom { 0% { transform: scale(0.8); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.progress-bar { width: 80%; height: 12px; background: #eee; border-radius: 6px; margin: 20px auto; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 100%); border-radius: 6px; transition: width 0.3s; }
+.progress-text { font-size: 14px; color: #666; }
+.collection-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.plant-card { aspect-ratio: 1; background: #f8faf6; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; }
+.plant-card:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.plant-card.locked { filter: grayscale(100%); opacity: 0.5; }
+.plant-card .emoji { font-size: 32px; }
+.plant-card .name { font-size: 12px; color: #666; margin-top: 4px; }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.active { display: flex; }
+.modal-content { background: white; border-radius: 24px; padding: 30px; width: 100%; max-width: 400px; position: relative; max-height: 80vh; overflow-y: auto; }
+.modal-close { position: absolute; top: 16px; right: 16px; font-size: 24px; cursor: pointer; color: #999; }
+.game-area { width: 100%; height: 280px; border-radius: 16px; position: relative; overflow: hidden; margin: 20px 0; }
+.game-score { font-size: 24px; font-weight: bold; color: #4CAF50; text-align: center; }
+.game-timer { font-size: 18px; color: #999; text-align: center; margin-bottom: 10px; }
+.toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 16px 32px; border-radius: 30px; font-size: 16px; z-index: 300; opacity: 0; transition: opacity 0.3s; }
+.toast.show { opacity: 1; }
+.weather-bar { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 16px; background: #f8faf6; border-radius: 16px; margin-bottom: 20px; }
+.weather-icon { font-size: 32px; }
+.weather-info { text-align: left; }
+.weather-temp { font-size: 20px; font-weight: bold; color: #333; }
+.weather-desc { font-size: 14px; color: #999; }
+.mood-bar { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+.mood-btn { font-size: 32px; padding: 8px; background: #f8faf6; border: none; border-radius: 12px; cursor: pointer; transition: all 0.3s; }
+.mood-btn:hover { transform: scale(1.2); }
+.achievements-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.achievement-card { text-align: center; padding: 16px; background: #f8faf6; border-radius: 16px; }
+.achievement-card.locked { opacity: 0.5; filter: grayscale(100%); }
+.achievement-icon { font-size: 40px; margin-bottom: 8px; }
+.achievement-name { font-size: 12px; color: #333; font-weight: bold; }
+.achievement-desc { font-size: 10px; color: #999; margin-top: 4px; }
+.themes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.theme-card { padding: 20px; border-radius: 16px; cursor: pointer; border: 3px solid transparent; transition: all 0.3s; }
+.theme-card.active { border-color: #4CAF50; }
+.theme-preview { font-size: 40px; text-align: center; margin-bottom: 8px; }
+.theme-name { font-size: 14px; color: #333; text-align: center; }
+.pots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.pot-item { font-size: 40px; padding: 16px; background: #f8faf6; border-radius: 16px; text-align: center; cursor: pointer; border: 3px solid transparent; transition: all 0.3s; }
+.pot-item.active { border-color: #4CAF50; background: #E8F5E9; }
+.pot-item.locked { opacity: 0.5; filter: grayscale(100%); }
+.pot-name { font-size: 10px; color: #999; margin-top: 4px; }
+
+.game-water-bg { background: linear-gradient(180deg, #E3F2FD 0%, #90CAF9 100%); }
+.game-sun-bg { background: linear-gradient(180deg, #FFF8E1 0%, #FFECB3 100%); }
+.game-bug-bg { background: linear-gradient(180deg, #E8F5E9 0%, #C8E6C9 100%); }
+.game-qa-bg { background: linear-gradient(180deg, #FCE4EC 0%, #F8BBD0 100%); }
+
+.water-pot { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 60px; cursor: grab; z-index: 10; }
+.water-pot:active { cursor: grabbing; }
+.water-plant { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); font-size: 80px; }
+.water-drop { position: absolute; font-size: 24px; pointer-events: none; }
+
+.cloud { position: absolute; font-size: 48px; cursor: pointer; transition: all 0.3s; }
+.cloud:hover { transform: scale(1.1); }
+.sun-target { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 100px; opacity: 0.3; }
+.sun-ray { position: absolute; font-size: 32px; pointer-events: none; }
+
+.bug { position: absolute; font-size: 36px; cursor: pointer; transition: all 0.2s; }
+.bug:hover { transform: scale(1.2); }
+.bug-hit { animation: bugHit 0.3s ease forwards; }
+@keyframes bugHit { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5) rotate(180deg); } 100% { transform: scale(0); opacity: 0; } }
+.bug-health { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; gap: 4px; }
+.health-bar { flex: 1; height: 8px; background: #f44336; border-radius: 4px; }
+.health-bar.filled { background: #4CAF50; }
+
+.qa-options { display: flex; flex-direction: column; gap: 12px; }
+.qa-option { padding: 16px; background: #f5f5f5; border: 2px solid transparent; border-radius: 12px; cursor: pointer; transition: all 0.3s; text-align: center; }
+.qa-option:hover { border-color: #4CAF50; }
+.qa-option.correct { background: #E8F5E9; border-color: #4CAF50; }
+.qa-option.wrong { background: #FFEBEE; border-color: #F44336; }
+.qa-score-display { font-size: 20px; font-weight: bold; color: #4CAF50; text-align: center; margin-bottom: 10px; }
+.qa-combo { font-size: 16px; color: #FF9800; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="app" id="main-app">
+        <div class="page active" id="page-focus">
+            <div class="stats-bar">
+                <div class="stat-item"><div class="stat-value" id="stat-today">0</div><div class="stat-label">今日番茄</div></div>
+                <div class="stat-item"><div class="stat-value" id="stat-total">0</div><div class="stat-label">累计番茄</div></div>
+                <div class="stat-item"><div class="stat-value" id="stat-level">1</div><div class="stat-label">花园等级</div></div>
+            </div>
+            <div class="timer-section">
+                <div class="timer-circle"><div class="timer-display" id="timer-display">25:00</div></div>
+                <div class="timer-mode" id="timer-mode">专注模式</div>
+                <div class="timer-buttons">
+                    <button class="btn btn-primary" id="btn-start">开始专注</button>
+                    <button class="btn btn-secondary btn-small" id="btn-pause" style="display: none;">暂停</button>
+                    <button class="btn btn-secondary btn-small" id="btn-abort" style="display: none;">放弃</button>
+                </div>
+            </div>
+            <div class="plant-pet">
+                <div class="plant-emoji" id="plant-emoji" onclick="petPlant()">🌱</div>
+                <div class="plant-status" id="plant-status">幼苗期</div>
+            </div>
+            <div class="mini-games">
+                <button class="game-btn" style="background:linear-gradient(135deg,#E3F2FD,#BBDEFB);color:#1976D2;" onclick="openGame('water')">💧 浇水</button>
+                <button class="game-btn" style="background:linear-gradient(135deg,#FFF8E1,#FFECB3);color:#E65100;" onclick="openGame('sun')">☀️ 阳光</button>
+                <button class="game-btn" style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#2E7D32;" onclick="openGame('bug')">🐛 除虫</button>
+                <button class="game-btn" style="background:linear-gradient(135deg,#FCE4EC,#F8BBD0);color:#880E4F;" onclick="openGame('qa')">📚 百科</button>
+            </div>
+        </div>
+        
+        <div class="page" id="page-garden">
+            <h2 style="text-align:center;margin-bottom:20px;color:#2E7D32;">🌿 我的花园</h2>
+            <div class="weather-bar">
+                <div class="weather-icon" id="weather-icon">☀️</div>
+                <div class="weather-info">
+                    <div class="weather-temp" id="weather-temp">25°C</div>
+                    <div class="weather-desc" id="weather-desc">晴朗</div>
+                </div>
+                <button class="btn btn-secondary btn-small" onclick="refreshWeather()">🔄</button>
+            </div>
+            <div class="garden-plant" id="garden-plant" onclick="petPlant()">🌱</div>
+            <div class="progress-bar"><div class="progress-fill" id="plant-progress" style="width:0%"></div></div>
+            <div class="progress-text" id="plant-progress-text">生长进度: 0/4</div>
+            <div class="mood-bar">
+                <button class="mood-btn" onclick="setMood('happy')">😄</button>
+                <button class="mood-btn" onclick="setMood('normal')">😐</button>
+                <button class="mood-btn" onclick="setMood('sad')">😢</button>
+            </div>
+            <div style="text-align:center;color:#999;font-size:14px;margin-bottom:20px;" id="mood-text">点击表情与植物互动</div>
+            <button class="btn btn-primary" id="btn-new-plant" style="width:100%">🌱 培育新植物</button>
+        </div>
+        
+        <div class="page" id="page-collection">
+            <h2 style="text-align:center;margin-bottom:20px;color:#2E7D32;">📖 植物图鉴</h2>
+            <p style="text-align:center;color:#999;margin-bottom:20px;">已解锁 <span id="unlocked-count">0</span> / 8 种植物</p>
+            <div class="collection-grid" id="collection-grid"></div>
+            <div id="plant-detail-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-close" onclick="closePlantDetail()">×</div>
+                    <div style="text-align:center;">
+                        <div style="font-size:80px;margin:20px 0;" id="detail-emoji">🌱</div>
+                        <h3 id="detail-name" style="color:#2E7D32;margin-bottom:10px;">植物名称</h3>
+                        <p id="detail-desc" style="color:#666;margin-bottom:10px;">描述</p>
+                        <p id="detail-tips" style="color:#999;font-size:14px;">小贴士</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="page" id="page-achievements">
+            <h2 style="text-align:center;margin-bottom:20px;color:#2E7D32;">🏅 成就徽章</h2>
+            <p style="text-align:center;color:#999;margin-bottom:20px;">已解锁 <span id="achievement-count">0</span> / 10 个成就</p>
+            <div class="achievements-grid" id="achievements-grid"></div>
+        </div>
+        
+        <div class="page" id="page-customize">
+            <h2 style="text-align:center;margin-bottom:20px;color:#2E7D32;">🎨 花园自定义</h2>
+            <h3 style="color:#666;margin-bottom:12px;">🌄 主题背景</h3>
+            <div class="themes-grid" id="themes-grid"></div>
+            <h3 style="color:#666;margin-top:30px;margin-bottom:12px;">🪴 花盆样式</h3>
+            <div class="pots-grid" id="pots-grid"></div>
+        </div>
+        
+        <div class="tab-bar">
+            <div class="tab-item active" onclick="switchTab('focus')"><span class="tab-icon">🍅</span><span class="tab-text">专注</span></div>
+            <div class="tab-item" onclick="switchTab('garden')"><span class="tab-icon">🌸</span><span class="tab-text">花园</span></div>
+            <div class="tab-item" onclick="switchTab('collection')"><span class="tab-icon">📖</span><span class="tab-text">图鉴</span></div>
+            <div class="tab-item" onclick="switchTab('achievements')"><span class="tab-icon">🏅</span><span class="tab-text">成就</span></div>
+            <div class="tab-item" onclick="switchTab('customize')"><span class="tab-icon">🎨</span><span class="tab-text">自定义</span></div>
+        </div>
+        
+        <div id="game-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-close" onclick="closeGame()">×</div>
+                <h3 style="text-align:center;color:#2E7D32;margin-bottom:10px;" id="game-title">游戏标题</h3>
+                <p style="text-align:center;color:#999;margin-bottom:10px;" id="game-desc">游戏说明</p>
+                <div class="game-timer" id="game-timer">时间: 30s</div>
+                <div class="game-area" id="game-area"></div>
+                <div class="game-score" id="game-score">得分: 0</div>
+                <button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="startCurrentGame()">开始游戏</button>
+            </div>
+        </div>
+        
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script>
+const PLANTS = [
+    { id: 1, name: '多肉', emoji: '🌵', minTime: 3, maxTime: 8, desc: '多肉植物耐旱易养，叶片肥厚饱满', tips: '需要充足阳光，但要避免暴晒' },
+    { id: 2, name: '仙人掌', emoji: '🌿', minTime: 5, maxTime: 12, desc: '仙人掌生命力顽强，能在干旱环境生存', tips: '宁可少浇水也不要浇多' },
+    { id: 3, name: '向日葵', emoji: '🌻', minTime: 4, maxTime: 9, desc: '向日葵追逐阳光生长，代表积极向上', tips: '需要充足的阳光才能茁壮成长' },
+    { id: 4, name: '薄荷', emoji: '🌱', minTime: 2, maxTime: 6, desc: '薄荷清新芳香，可食用可驱蚊', tips: '定期修剪可以促进分枝' },
+    { id: 5, name: '绿萝', emoji: '🍃', minTime: 6, maxTime: 10, desc: '绿萝是优秀的空气净化植物', tips: '喜欢温暖湿润的环境' },
+    { id: 6, name: '绣球', emoji: '💐', minTime: 7, maxTime: 11, desc: '绣球花花球饱满，颜色会随土壤变化', tips: '喜欢酸性土壤' },
+    { id: 7, name: '铃兰', emoji: '🌸', minTime: 3, maxTime: 7, desc: '铃兰花形优雅，香气清新', tips: '适合半阴环境' },
+    { id: 8, name: '小雏菊', emoji: '🌼', minTime: 4, maxTime: 8, desc: '小雏菊花色清新，生命力旺盛', tips: '喜欢充足阳光' }
+];
+
+const QUESTIONS = [
+    { question: '多肉植物最适合的浇水频率是？', options: ['每天', '每周一次', '每月一次'], answer: 1 },
+    { question: '向日葵为什么会跟着太阳转？', options: ['喜欢温暖', '生长素分布不均', '偶然现象'], answer: 1 },
+    { question: '薄荷属于哪种类型的植物？', options: ['多肉植物', '香草植物', '水生植物'], answer: 1 },
+    { question: '仙人掌原产于哪里？', options: ['热带雨林', '沙漠地区', '寒带地区'], answer: 1 },
+    { question: '绿萝可以净化空气中的哪种物质？', options: ['氧气', '甲醛', '二氧化碳'], answer: 1 },
+    { question: '绣球花颜色会随什么变化？', options: ['温度', '土壤酸碱度', '光照'], answer: 1 },
+    { question: '铃兰的花语是什么？', options: ['勇敢', '幸福归来', '永恒'], answer: 1 },
+    { question: '小雏菊象征着什么？', options: ['爱情', '希望', '财富'], answer: 1 }
+];
+
+const ACHIEVEMENTS = [
+    { id: 1, icon: '🥇', name: '初出茅庐', desc: '完成第一次专注', unlocked: false },
+    { id: 2, icon: '🌱', name: '播种新手', desc: '培育第一株植物', unlocked: false },
+    { id: 3, icon: '🌸', name: '花开富贵', desc: '让植物开花', unlocked: false },
+    { id: 4, icon: '🏆', name: '番茄大师', desc: '累计完成10个番茄', unlocked: false },
+    { id: 5, icon: '📚', name: '知识达人', desc: '答对5道题', unlocked: false },
+    { id: 6, icon: '💧', name: '浇水能手', desc: '完成5次浇水游戏', unlocked: false },
+    { id: 7, icon: '🌞', name: '阳光收集者', desc: '完成5次阳光游戏', unlocked: false },
+    { id: 8, icon: '🐛', name: '除虫专家', desc: '完成5次除虫游戏', unlocked: false },
+    { id: 9, icon: '🌈', name: '彩虹花园', desc: '解锁所有植物', unlocked: false },
+    { id: 10, icon: '🌟', name: '花园大师', desc: '花园等级达到10级', unlocked: false }
+];
+
+const THEMES = [
+    { id: 'green', name: '清新绿意', bg: 'linear-gradient(135deg, #f8faf6 0%, #e8f5e9 100%)', preview: '🌿' },
+    { id: 'pink', name: '浪漫樱花', bg: 'linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%)', preview: '🌸' },
+    { id: 'blue', name: '天空海洋', bg: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)', preview: '🌊' },
+    { id: 'sunset', name: '落日余晖', bg: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)', preview: '🌅' }
+];
+
+const POTS = [
+    { id: 1, emoji: '🪴', name: '经典陶盆', unlocked: true },
+    { id: 2, emoji: '🌸', name: '樱花盆', unlocked: false, requirement: '完成5次专注' },
+    { id: 3, emoji: '💎', name: '水晶盆', unlocked: false, requirement: '解锁3种植物' },
+    { id: 4, emoji: '🏺', name: '复古铜盆', unlocked: false, requirement: '花园等级5级' },
+    { id: 5, emoji: '🦋', name: '蝴蝶盆', unlocked: false, requirement: '植物开花1次' },
+    { id: 6, emoji: '🌈', name: '彩虹盆', unlocked: false, requirement: '完成10个番茄' },
+    { id: 7, emoji: '⭐', name: '星光盆', unlocked: false, requirement: '解锁6种植物' },
+    { id: 8, emoji: '💫', name: '梦幻盆', unlocked: false, requirement: '花园等级10级' }
+];
+
+const WEATHER_TYPES = [
+    { icon: '☀️', temp: '28°C', desc: '晴朗', growthRate: 1.2 },
+    { icon: '🌤️', temp: '24°C', desc: '多云', growthRate: 1.0 },
+    { icon: '🌧️', temp: '20°C', desc: '下雨', growthRate: 1.1 },
+    { icon: '⛅', temp: '22°C', desc: '阴天', growthRate: 0.9 },
+    { icon: '❄️', temp: '8°C', desc: '下雪', growthRate: 0.5 },
+    { icon: '🌙', temp: '18°C', desc: '夜晚', growthRate: 0.8 }
+];
+
+const STORAGE_KEY = 'garden_data_v2';
+let userData = { 
+    todayTomatoes: 0, totalTomatoes: 0, gardenLevel: 1, lastFocusDate: new Date().toDateString(), 
+    unlockedPlants: [], currentPlant: null, plantRecords: [], 
+    unlockedAchievements: [], currentTheme: 'green', currentPot: 1,
+    weather: WEATHER_TYPES[0], plantMood: 'normal',
+    gameCounts: { water: 0, sun: 0, bug: 0, qaCorrect: 0 },
+    lastWeatherTime: Date.now()
+};
+let timerState = { timeLeft: 25 * 60, isRunning: false, isPaused: false, mode: 'focus', pomodoroCount: 0 };
+let currentGame = null;
+let gameScore = 0;
+let gameTimeLeft = 30;
+let gameInterval = null;
+let gameTimerInterval = null;
+
+function init() { 
+    loadData(); checkNewDay(); checkWeather(); initCurrentPlant(); checkAchievements(); checkPotUnlocks(); applyTheme(); updateUI(); initEventListeners(); 
+}
+function loadData() { const saved = localStorage.getItem(STORAGE_KEY); if (saved) userData = JSON.parse(saved); }
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(userData)); }
+function checkNewDay() { const today = new Date().toDateString(); if (userData.lastFocusDate !== today) { userData.todayTomatoes = 0; userData.lastFocusDate = today; saveData(); } }
+
+function checkWeather() {
+    const now = Date.now();
+    if (now - userData.lastWeatherTime > 3600000) {
+        userData.weather = WEATHER_TYPES[Math.floor(Math.random() * WEATHER_TYPES.length)];
+        userData.lastWeatherTime = now;
+        saveData();
+    }
+}
+
+function refreshWeather() {
+    userData.weather = WEATHER_TYPES[Math.floor(Math.random() * WEATHER_TYPES.length)];
+    userData.lastWeatherTime = Date.now();
+    saveData();
+    updateWeatherDisplay();
+    showToast(`天气变化！${userData.weather.desc}`);
+}
+
+function updateWeatherDisplay() {
+    document.getElementById('weather-icon').textContent = userData.weather.icon;
+    document.getElementById('weather-temp').textContent = userData.weather.temp;
+    document.getElementById('weather-desc').textContent = userData.weather.desc;
+}
+
+function initCurrentPlant() { if (!userData.currentPlant) { userData.currentPlant = createNewPlant(); saveData(); } }
+function createNewPlant() { const plant = PLANTS[Math.floor(Math.random() * PLANTS.length)]; const bloomTime = Math.floor(Math.random() * (plant.maxTime - plant.minTime + 1)) + plant.minTime; return { ...plant, bloomTime: bloomTime * 60, currentWater: 0, totalWaterNeeded: 4, stage: 0, focusMinutes: 0, isBloomed: false, isWilted: false, createdAt: Date.now() }; }
+
+function checkAchievements() {
+    const checks = [
+        { id: 1, condition: userData.totalTomatoes >= 1 },
+        { id: 2, condition: userData.plantRecords.length >= 1 },
+        { id: 3, condition: userData.unlockedPlants.length >= 1 },
+        { id: 4, condition: userData.totalTomatoes >= 10 },
+        { id: 5, condition: userData.gameCounts.qaCorrect >= 5 },
+        { id: 6, condition: userData.gameCounts.water >= 5 },
+        { id: 7, condition: userData.gameCounts.sun >= 5 },
+        { id: 8, condition: userData.gameCounts.bug >= 5 },
+        { id: 9, condition: userData.unlockedPlants.length >= 8 },
+        { id: 10, condition: userData.gardenLevel >= 10 }
+    ];
+    
+    checks.forEach(c => {
+        if (c.condition && !userData.unlockedAchievements.includes(c.id)) {
+            userData.unlockedAchievements.push(c.id);
+            showToast(`🏅 解锁成就：${ACHIEVEMENTS.find(a => a.id === c.id)?.name}`);
+        }
+    });
+    saveData();
+}
+
+function checkPotUnlocks() {
+    POTS.forEach((pot, index) => {
+        if (!pot.unlocked) {
+            let unlocked = false;
+            if (userData.totalTomatoes >= 5 && index === 1) unlocked = true;
+            if (userData.unlockedPlants.length >= 3 && index === 2) unlocked = true;
+            if (userData.gardenLevel >= 5 && index === 3) unlocked = true;
+            if (userData.unlockedPlants.length >= 1 && index === 4) unlocked = true;
+            if (userData.totalTomatoes >= 10 && index === 5) unlocked = true;
+            if (userData.unlockedPlants.length >= 6 && index === 6) unlocked = true;
+            if (userData.gardenLevel >= 10 && index === 7) unlocked = true;
+            if (unlocked) {
+                POTS[index].unlocked = true;
+                showToast(`🪴 解锁新花盆：${pot.name}`);
+            }
+        }
+    });
+}
+
+function updateUI() { 
+    updateStats(); updateTimerDisplay(); updatePlantDisplay(); updateGardenPage(); updateCollectionPage(); updateAchievementsPage(); updateCustomizePage(); updateWeatherDisplay();
+}
+
+function updateStats() { 
+    document.getElementById('stat-today').textContent = userData.todayTomatoes; 
+    document.getElementById('stat-total').textContent = userData.totalTomatoes; 
+    document.getElementById('stat-level').textContent = userData.gardenLevel; 
+    document.getElementById('unlocked-count').textContent = userData.unlockedPlants.length; 
+}
+
+function updateTimerDisplay() { 
+    const minutes = Math.floor(timerState.timeLeft / 60); 
+    const seconds = timerState.timeLeft % 60; 
+    document.getElementById('timer-display').textContent = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0'); 
+    document.getElementById('timer-mode').textContent = { focus: '专注模式', break: '短休息', longBreak: '长休息' }[timerState.mode]; 
+}
+
+function updatePlantDisplay() { 
+    const plant = userData.currentPlant; 
+    if (!plant) return; 
+    const emojis = ['🌱', '🌿', '🪴', '🌸']; 
+    const stages = ['种子期', '幼苗期', '成长期', '开花期']; 
+    document.getElementById('plant-emoji').textContent = plant.isBloomed ? plant.emoji : emojis[plant.stage]; 
+    document.getElementById('plant-status').textContent = stages[plant.stage] + (plant.isWilted ? ' (枯萎)' : ''); 
+    const gardenPlant = document.getElementById('garden-plant'); 
+    gardenPlant.textContent = plant.isBloomed ? plant.emoji : emojis[plant.stage]; 
+    gardenPlant.className = 'garden-plant' + (plant.isWilted ? ' wilted' : '') + (plant.isBloomed ? ' bloomed' : ''); 
+}
+
+function updateGardenPage() { 
+    const plant = userData.currentPlant; 
+    if (!plant) return; 
+    const progress = (plant.currentWater / plant.totalWaterNeeded) * 100; 
+    document.getElementById('plant-progress').style.width = progress + '%'; 
+    document.getElementById('plant-progress-text').textContent = `生长进度: ${plant.currentWater}/${plant.totalWaterNeeded}`; 
+}
+
+function updateCollectionPage() { 
+    const grid = document.getElementById('collection-grid'); 
+    grid.innerHTML = PLANTS.map(plant => { 
+        const isUnlocked = userData.unlockedPlants.includes(plant.id); 
+        return `<div class="plant-card ${isUnlocked ? '' : 'locked'}" onclick="${isUnlocked ? 'showPlantDetail(' + plant.id + ')' : ''}"><div class="emoji">${plant.emoji}</div><div class="name">${isUnlocked ? plant.name : '???'}</div></div>`; 
+    }).join(''); 
+}
+
+function updateAchievementsPage() {
+    document.getElementById('achievement-count').textContent = userData.unlockedAchievements.length;
+    const grid = document.getElementById('achievements-grid');
+    grid.innerHTML = ACHIEVEMENTS.map(ach => {
+        const isUnlocked = userData.unlockedAchievements.includes(ach.id);
+        return `<div class="achievement-card ${isUnlocked ? '' : 'locked'}">
+            <div class="achievement-icon">${ach.icon}</div>
+            <div class="achievement-name">${ach.name}</div>
+            <div class="achievement-desc">${ach.desc}</div>
+        </div>`;
+    }).join('');
+}
+
+function updateCustomizePage() {
+    const themesGrid = document.getElementById('themes-grid');
+    themesGrid.innerHTML = THEMES.map(theme => `<div class="theme-card ${userData.currentTheme === theme.id ? 'active' : ''}" style="background:${theme.bg}" onclick="selectTheme('${theme.id}')">
+        <div class="theme-preview">${theme.preview}</div>
+        <div class="theme-name">${theme.name}</div>
+    </div>`).join('');
+    
+    const potsGrid = document.getElementById('pots-grid');
+    potsGrid.innerHTML = POTS.map(pot => `<div class="pot-item ${userData.currentPot === pot.id ? 'active' : ''} ${pot.unlocked ? '' : 'locked'}" onclick="${pot.unlocked ? 'selectPot(' + pot.id + ')' : ''}">
+        ${pot.emoji}
+        <div class="pot-name">${pot.name}</div>
+    </div>`).join('');
+}
+
+function selectTheme(themeId) {
+    userData.currentTheme = themeId;
+    saveData();
+    applyTheme();
+    updateCustomizePage();
+    showToast('主题已更换！');
+}
+
+function applyTheme() {
+    const theme = THEMES.find(t => t.id === userData.currentTheme);
+    if (theme) document.body.style.background = theme.bg;
+}
+
+function selectPot(potId) {
+    userData.currentPot = potId;
+    saveData();
+    updateCustomizePage();
+    showToast('花盆已更换！');
+}
+
+function initEventListeners() { 
+    document.getElementById('btn-start').addEventListener('click', startTimer); 
+    document.getElementById('btn-pause').addEventListener('click', pauseTimer); 
+    document.getElementById('btn-abort').addEventListener('click', abortTimer); 
+    document.getElementById('btn-new-plant').addEventListener('click', startNewPlant); 
+}
+
+function switchTab(tabName) { 
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active')); 
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+    event.currentTarget.classList.add('active'); 
+    document.getElementById('page-' + tabName).classList.add('active'); 
+}
+
+function startTimer() { 
+    if (timerState.isRunning) return; 
+    timerState.isRunning = true; 
+    document.getElementById('btn-start').style.display = 'none'; 
+    document.getElementById('btn-pause').style.display = 'inline-block'; 
+    document.getElementById('btn-abort').style.display = 'inline-block'; 
+    timerState.interval = setInterval(() => { 
+        if (timerState.timeLeft > 0) { 
+            timerState.timeLeft--; 
+            updateTimerDisplay(); 
+            if (userData.currentPlant && !userData.currentPlant.isWilted) {
+                const growthRate = userData.weather.growthRate;
+                userData.currentPlant.focusMinutes += growthRate;
+            }
+        } else { completeTimer(); } 
+    }, 1000); 
+}
+
+function pauseTimer() { 
+    timerState.isPaused = true; 
+    clearInterval(timerState.interval); 
+    document.getElementById('btn-pause').style.display = 'none'; 
+    document.getElementById('btn-start').style.display = 'inline-block'; 
+}
+
+function abortTimer() { 
+    clearInterval(timerState.interval); 
+    timerState.isRunning = false; 
+    timerState.timeLeft = 25 * 60; 
+    timerState.mode = 'focus'; 
+    updateTimerDisplay(); 
+    if (userData.currentPlant) userData.currentPlant.isWilted = true; 
+    document.getElementById('btn-start').style.display = 'inline-block'; 
+    document.getElementById('btn-pause').style.display = 'none'; 
+    document.getElementById('btn-abort').style.display = 'none'; 
+    updatePlantDisplay(); 
+    saveData(); 
+    showToast('😢 植物枯萎了，重新开始吧'); 
+}
+
+function completeTimer() { 
+    clearInterval(timerState.interval); 
+    timerState.isRunning = false; 
+    userData.todayTomatoes++; 
+    userData.totalTomatoes++; 
+    userData.gardenLevel = Math.floor(userData.totalTomatoes / 10) + 1; 
+    if (userData.currentPlant && !userData.currentPlant.isWilted) waterPlant(); 
+    timerState.pomodoroCount++; 
+    if (timerState.pomodoroCount >= 4) { 
+        timerState.mode = 'longBreak'; 
+        timerState.timeLeft = 15 * 60; 
+        timerState.pomodoroCount = 0; 
+    } else { 
+        timerState.mode = 'break'; 
+        timerState.timeLeft = 5 * 60; 
+    } 
+    checkAchievements();
+    updateUI(); 
+    saveData(); 
+    document.getElementById('btn-start').style.display = 'inline-block'; 
+    document.getElementById('btn-pause').style.display = 'none'; 
+    document.getElementById('btn-abort').style.display = 'none'; 
+    showToast('🎉 完成！休息一下吧'); 
+}
+
+function waterPlant() { 
+    const plant = userData.currentPlant; 
+    if (!plant || plant.isBloomed) return; 
+    plant.currentWater++; 
+    plant.isWilted = false; 
+    if (plant.currentWater >= plant.totalWaterNeeded) { 
+        plant.stage++; 
+        plant.currentWater = 0; 
+        if (plant.stage >= 3 && plant.focusMinutes >= plant.bloomTime) { 
+            plant.isBloomed = true; 
+            plant.stage = 3; 
+            if (!userData.unlockedPlants.includes(plant.id)) { 
+                userData.unlockedPlants.push(plant.id); 
+                userData.plantRecords.push({ plantId: plant.id, name: plant.name, emoji: plant.emoji, completedAt: Date.now() }); 
+            } 
+            checkAchievements();
+            checkPotUnlocks();
+            showToast('🌸 恭喜！植物开花了！'); 
+        } 
+    } 
+}
+
+function startNewPlant() { 
+    userData.currentPlant = createNewPlant(); 
+    updateUI(); 
+    saveData(); 
+    showToast('🌱 新的种子种下了！'); 
+}
+
+function petPlant() {
+    if (!userData.currentPlant || userData.currentPlant.isWilted) return;
+    const moodResponses = {
+        happy: ['😄 好开心！', '✨ 你真好！', '🌿 我爱你！'],
+        normal: ['😊 你好呀！', '🌱 今天天气不错！'],
+        sad: ['😢 谢谢你关心我...']
+    };
+    const responses = moodResponses[userData.plantMood] || moodResponses.normal;
+    showToast(responses[Math.floor(Math.random() * responses.length)]);
+    if (userData.currentPlant.focusMinutes < 100) {
+        userData.currentPlant.focusMinutes += 10;
+        saveData();
+        updateGardenPage();
+    }
+}
+
+function setMood(mood) {
+    userData.plantMood = mood;
+    saveData();
+    const moodTexts = { happy: '😄 植物很开心！', normal: '😐 植物心情一般', sad: '😢 植物有点难过' };
+    document.getElementById('mood-text').textContent = moodTexts[mood];
+    if (mood === 'happy' && userData.currentPlant) {
+        userData.currentPlant.focusMinutes += 20;
+        saveData();
+        updateGardenPage();
+    }
+}
+
+function openGame(gameType) {
+    currentGame = gameType;
+    const titles = { water: '💧 浇水游戏', sun: '☀️ 阳光收集', bug: '🐛 除虫游戏', qa: '📚 植物百科' };
+    const descs = { 
+        water: '拖动水壶到植物上方松手，给植物浇水！', 
+        sun: '点击云朵移开它们，让阳光照耀植物！',
+        bug: '快速点击虫子消灭它们，保护植物！',
+        qa: '回答问题，连续答对获得连击奖励！'
+    };
+    const bgClasses = { water: 'game-water-bg', sun: 'game-sun-bg', bug: 'game-bug-bg', qa: 'game-qa-bg' };
+    
+    document.getElementById('game-title').textContent = titles[gameType];
+    document.getElementById('game-desc').textContent = descs[gameType];
+    document.getElementById('game-area').className = 'game-area ' + bgClasses[gameType];
+    document.getElementById('game-timer').textContent = '时间: 30s';
+    document.getElementById('game-score').textContent = '得分: 0';
+    document.getElementById('game-modal').classList.add('active');
+}
+
+function closeGame() {
+    stopGame();
+    document.getElementById('game-modal').classList.remove('active');
+}
+
+function startCurrentGame() {
+    stopGame();
+    gameScore = 0;
+    gameTimeLeft = 30;
+    updateGameScore();
+    updateGameTimer();
+    
+    if (currentGame === 'water') initWaterGame();
+    else if (currentGame === 'sun') initSunGame();
+    else if (currentGame === 'bug') initBugGame();
+    else if (currentGame === 'qa') initQAGame();
+    
+    startGameTimer();
+}
+
+function stopGame() {
+    if (gameInterval) clearInterval(gameInterval);
+    if (gameTimerInterval) clearInterval(gameTimerInterval);
+    gameInterval = null;
+    gameTimerInterval = null;
+    
+    document.removeEventListener('mousemove', drag);
+    document.removeEventListener('touchmove', drag);
+    document.removeEventListener('mouseup', endDrag);
+    document.removeEventListener('touchend', endDrag);
+    
+    document.getElementById('game-area').innerHTML = '';
+}
+
+function startGameTimer() {
+    gameTimerInterval = setInterval(() => {
+        gameTimeLeft--;
+        updateGameTimer();
+        if (gameTimeLeft <= 0) {
+            endGame();
+        }
+    }, 1000);
+}
+
+function updateGameTimer() {
+    document.getElementById('game-timer').textContent = '时间: ' + gameTimeLeft + 's';
+}
+
+function updateGameScore() {
+    document.getElementById('game-score').textContent = '得分: ' + gameScore;
+}
+
+function endGame() {
+    stopGame();
+    userData.gameCounts[currentGame]++;
+    checkAchievements();
+    saveData();
+    
+    if (userData.currentPlant) {
+        userData.currentPlant.focusMinutes += gameScore;
+        saveData();
+    }
+    
+    const messages = {
+        water: `💧 游戏结束！浇了 ${gameScore} 滴水，植物成长加速！`,
+        sun: `☀️ 游戏结束！收集了 ${gameScore} 缕阳光！`,
+        bug: `🐛 游戏结束！消灭了 ${gameScore} 只虫子，植物安全了！`,
+        qa: `📚 游戏结束！答对 ${gameScore} 题，获得知识奖励！`
+    };
+    showToast(messages[currentGame]);
+}
+
+let waterPot = null;
+let isDragging = false;
+
+function initWaterGame() {
+    const area = document.getElementById('game-area');
+    area.innerHTML = `
+        <div class="water-plant">🌱</div>
+        <div class="water-pot" id="water-pot">🚰</div>
+    `;
+    
+    waterPot = document.getElementById('water-pot');
+    
+    waterPot.addEventListener('mousedown', startDrag);
+    waterPot.addEventListener('touchstart', startDrag, { passive: false });
+    
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('touchmove', drag, { passive: false });
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+}
+
+function startDrag(e) {
+    isDragging = true;
+    e.preventDefault();
+}
+
+function drag(e) {
+    if (!isDragging || !waterPot) return;
+    e.preventDefault();
+    
+    const rect = document.getElementById('game-area').getBoundingClientRect();
+    const clientX = e.clientX || e.touches[0].clientX;
+    const clientY = e.clientY || e.touches[0].clientY;
+    
+    let x = clientX - rect.left - 30;
+    let y = clientY - rect.top - 30;
+    
+    x = Math.max(0, Math.min(x, rect.width - 60));
+    y = Math.max(0, Math.min(y, rect.height - 100));
+    
+    waterPot.style.left = x + 'px';
+    waterPot.style.top = y + 'px';
+    waterPot.style.transform = 'none';
+}
+
+function endDrag() {
+    if (!isDragging || !waterPot) return;
+    isDragging = false;
+    
+    const potRect = waterPot.getBoundingClientRect();
+    const plantRect = document.querySelector('.water-plant').getBoundingClientRect();
+    
+    if (potRect.left < plantRect.right && potRect.right > plantRect.left &&
+        potRect.top < plantRect.bottom && potRect.bottom > plantRect.top) {
+        createWaterDrop();
+        gameScore += 10;
+        updateGameScore();
+    }
+    
+    waterPot.style.left = '50%';
+    waterPot.style.top = 'auto';
+    waterPot.style.bottom = '20px';
+    waterPot.style.transform = 'translateX(-50%)';
+}
+
+function createWaterDrop() {
+    const area = document.getElementById('game-area');
+    const drop = document.createElement('div');
+    drop.className = 'water-drop';
+    drop.textContent = '💧';
+    drop.style.left = waterPot.offsetLeft + 10 + 'px';
+    drop.style.top = waterPot.offsetTop + 'px';
+    drop.style.animation = 'fall 0.5s linear forwards';
+    area.appendChild(drop);
+    setTimeout(() => drop.remove(), 500);
+}
+
+function initSunGame() {
+    const area = document.getElementById('game-area');
+    area.innerHTML = '<div class="sun-target">☀️</div>';
+    
+    for (let i = 0; i < 5; i++) {
+        createCloud(area);
+    }
+    
+    gameInterval = setInterval(() => {
+        if (document.querySelectorAll('.cloud').length < 6) {
+            createCloud(area);
+        }
+    }, 2000);
+}
+
+function createCloud(area) {
+    const cloud = document.createElement('div');
+    cloud.className = 'cloud';
+    cloud.textContent = '☁️';
+    cloud.style.left = Math.random() * 80 + '%';
+    cloud.style.top = Math.random() * 60 + '%';
+    cloud.addEventListener('click', () => {
+        cloud.style.transition = 'all 0.5s ease';
+        cloud.style.transform = 'translateX(500px)';
+        cloud.style.opacity = '0';
+        setTimeout(() => cloud.remove(), 500);
+        
+        gameScore += 15;
+        updateGameScore();
+        
+        createSunRay(cloud.offsetLeft, cloud.offsetTop);
+    });
+    area.appendChild(cloud);
+}
+
+function createSunRay(x, y) {
+    const area = document.getElementById('game-area');
+    const ray = document.createElement('div');
+    ray.className = 'sun-ray';
+    ray.textContent = '✨';
+    ray.style.left = x + 'px';
+    ray.style.top = y + 'px';
+    ray.style.animation = 'floatUp 0.8s linear forwards';
+    area.appendChild(ray);
+    setTimeout(() => ray.remove(), 800);
+}
+
+let bugHealth = 5;
+
+function initBugGame() {
+    const area = document.getElementById('game-area');
+    bugHealth = 5;
+    
+    area.innerHTML = `
+        <div class="bug-health">
+            ${'<div class="health-bar filled"></div>'.repeat(bugHealth)}
+        </div>
+    `;
+    
+    spawnBug();
+    
+    gameInterval = setInterval(() => {
+        if (Math.random() < 0.3) spawnBug();
+    }, 800);
+}
+
+function spawnBug() {
+    const area = document.getElementById('game-area');
+    if (document.querySelectorAll('.bug').length >= 5) return;
+    
+    const bug = document.createElement('div');
+    bug.className = 'bug';
+    bug.textContent = '🐛';
+    bug.style.left = Math.random() * 80 + '%';
+    bug.style.top = '10%';
+    bug.style.animation = `bugMove ${3 + Math.random() * 2}s linear infinite`;
+    
+    bug.addEventListener('click', () => {
+        bug.classList.add('bug-hit');
+        gameScore++;
+        updateGameScore();
+        
+        setTimeout(() => {
+            bug.remove();
+            bugHealth--;
+            updateBugHealth();
+            
+            if (bugHealth <= 0) {
+                showToast('🎊 关卡通过！');
+                gameScore += 50;
+                updateGameScore();
+                bugHealth = 5;
+                updateBugHealth();
+            }
+        }, 300);
+    });
+    
+    area.appendChild(bug);
+}
+
+function updateBugHealth() {
+    const healthContainer = document.querySelector('.bug-health');
+    healthContainer.innerHTML = 
+        '<div class="health-bar filled"></div>'.repeat(bugHealth) +
+        '<div class="health-bar"></div>'.repeat(5 - bugHealth);
+}
+
+let qaCurrentQuestion = 0;
+let qaCombo = 0;
+
+function initQAGame() {
+    const area = document.getElementById('game-area');
+    qaCurrentQuestion = Math.floor(Math.random() * QUESTIONS.length);
+    qaCombo = 0;
+    
+    loadQAQuestion();
+}
+
+function loadQAQuestion() {
+    const area = document.getElementById('game-area');
+    const question = QUESTIONS[qaCurrentQuestion];
+    
+    area.innerHTML = `
+        <div class="qa-score-display">得分: ${gameScore}</div>
+        <div class="qa-combo">${qaCombo > 1 ? '🔥 连击 x' + qaCombo : ''}</div>
+        <div class="qa-question" style="font-size:18px;color:#333;margin-bottom:20px;text-align:center;padding:20px;background:#fff;border-radius:12px;">${question.question}</div>
+        <div class="qa-options">
+            ${question.options.map((opt, index) => `<div class="qa-option" onclick="answerQA(${index})">${opt}</div>`).join('')}
+        </div>
+    `;
+}
+
+function answerQA(index) {
+    const question = QUESTIONS[qaCurrentQuestion];
+    const options = document.querySelectorAll('.qa-option');
+    
+    options.forEach((opt, i) => {
+        opt.style.pointerEvents = 'none';
+        if (i === question.answer) opt.classList.add('correct');
+        else if (i === index) opt.classList.add('wrong');
+    });
+    
+    if (index === question.answer) {
+        qaCombo++;
+        const comboBonus = qaCombo > 1 ? qaCombo : 1;
+        gameScore += 10 * comboBonus;
+        userData.gameCounts.qaCorrect++;
+        showToast(`✅ 答对！${qaCombo > 1 ? '连击 x' + qaCombo : ''}`);
+    } else {
+        qaCombo = 0;
+        showToast('❌ 答错了');
+    }
+    
+    setTimeout(() => {
+        qaCurrentQuestion = (qaCurrentQuestion + 1) % QUESTIONS.length;
+        loadQAQuestion();
+    }, 1500);
+}
+
+function showPlantDetail(plantId) { 
+    const plant = PLANTS.find(p => p.id === plantId); 
+    if (!plant) return; 
+    document.getElementById('detail-emoji').textContent = plant.emoji; 
+    document.getElementById('detail-name').textContent = plant.name; 
+    document.getElementById('detail-desc').textContent = plant.desc; 
+    document.getElementById('detail-tips').textContent = '💡 ' + plant.tips; 
+    document.getElementById('plant-detail-modal').classList.add('active'); 
+}
+function closePlantDetail() { 
+    document.getElementById('plant-detail-modal').classList.remove('active'); 
+}
+
+function showToast(message) { 
+    const toast = document.getElementById('toast'); 
+    toast.textContent = message; 
+    toast.classList.add('show'); 
+    setTimeout(() => toast.classList.remove('show'), 2000); 
+}
+
+const extraStyle = document.createElement('style');
+extraStyle.textContent = `
+    @keyframes fall { to { transform: translateY(150px); } }
+    @keyframes floatUp { to { transform: translateY(-100px); opacity: 0; } }
+    @keyframes bugMove {
+        0% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(50px) rotate(10deg); }
+        50% { transform: translateY(100px) rotate(0deg); }
+        75% { transform: translateY(50px) rotate(-10deg); }
+        100% { transform: translateY(0) rotate(0deg); }
+    }
+`;
+document.head.appendChild(extraStyle);
+
+init();
+</script>
+</body>
+</html>
