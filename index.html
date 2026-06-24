@@ -2,7 +2,12 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="桌面小花园">
+    <link rel="manifest" href="manifest.json">
     <title>桌面小花园 - 番茄钟</title>
     <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -122,6 +127,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
                 <div class="stat-item"><div class="stat-value" id="stat-today">0</div><div class="stat-label">今日番茄</div></div>
                 <div class="stat-item"><div class="stat-value" id="stat-total">0</div><div class="stat-label">累计番茄</div></div>
                 <div class="stat-item"><div class="stat-value" id="stat-level">1</div><div class="stat-label">花园等级</div></div>
+                <div class="stat-item" style="cursor:pointer;" onclick="openAuth()"><div class="stat-value" style="font-size:24px;">👤</div><div class="stat-label">登录</div></div>
             </div>
             <div class="timer-section">
                 <div class="timer-circle"><div class="timer-display" id="timer-display">25:00</div></div>
@@ -218,8 +224,43 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
         </div>
         
         <div class="toast" id="toast"></div>
+        
+        <div id="auth-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-close" onclick="closeAuth()">×</div>
+                <h3 style="text-align:center;color:#2E7D32;margin-bottom:20px;" id="auth-title">登录</h3>
+                
+                <div id="auth-form">
+                    <div id="login-form">
+                        <input type="email" id="login-email" placeholder="邮箱" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
+                        <input type="password" id="login-password" placeholder="密码" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
+                        <button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="handleLogin()">登录</button>
+                        <p style="text-align:center;color:#999;font-size:14px;">还没有账号？<span style="color:#4CAF50;cursor:pointer;" onclick="showRegister()">立即注册</span></p>
+                    </div>
+                    
+                    <div id="register-form" style="display:none;">
+                        <input type="text" id="register-username" placeholder="用户名" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
+                        <input type="email" id="register-email" placeholder="邮箱" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
+                        <input type="password" id="register-password" placeholder="密码" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
+                        <button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="handleRegister()">注册</button>
+                        <p style="text-align:center;color:#999;font-size:14px;">已有账号？<span style="color:#4CAF50;cursor:pointer;" onclick="showLogin()">立即登录</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="user-menu" style="display:none;position:fixed;top:20px;right:20px;z-index:150;">
+            <button class="btn btn-secondary btn-small" onclick="toggleUserMenu()">👤</button>
+            <div id="user-dropdown" style="display:none;position:absolute;right:0;top:100%;margin-top:10px;background:white;border-radius:12px;padding:10px;box-shadow:0 4px 20px rgba(0,0,0,0.1);min-width:150px;">
+                <div style="padding:8px 12px;border-bottom:1px solid #eee;" id="user-name">用户名</div>
+                <div style="padding:8px 12px;border-bottom:1px solid #eee;" id="user-email">邮箱</div>
+                <div style="padding:8px 12px;color:#4CAF50;cursor:pointer;" onclick="syncData()">🔄 同步数据</div>
+                <div style="padding:8px 12px;color:#F44336;cursor:pointer;" onclick="handleLogout()">🚪 退出登录</div>
+            </div>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
 const PLANTS = [
     { id: 1, name: '多肉', emoji: '🌵', minTime: 3, maxTime: 8, desc: '多肉植物耐旱易养，叶片肥厚饱满', tips: '需要充足阳光，但要避免暴晒' },
@@ -301,6 +342,7 @@ let gameTimerInterval = null;
 
 function init() { 
     loadData(); checkNewDay(); checkWeather(); initCurrentPlant(); checkAchievements(); checkPotUnlocks(); applyTheme(); updateUI(); initEventListeners(); 
+    initSupabaseClient();
 }
 function loadData() { const saved = localStorage.getItem(STORAGE_KEY); if (saved) userData = JSON.parse(saved); }
 function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(userData)); }
@@ -950,6 +992,196 @@ function showToast(message) {
     setTimeout(() => toast.classList.remove('show'), 2000); 
 }
 
+// ==================== Supabase 认证功能 ====================
+const SUPABASE_URL = 'https://nsbsxcecjsgydihmzgnw.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_6gIwRwI1gYkaXjIjUr0P-A_QUVeWJES';
+let supabaseClient = null;
+let currentUser = null;
+
+function initSupabaseClient() {
+    try {
+        supabaseClient = window.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('Supabase 客户端初始化成功');
+        checkAuthStatus();
+    } catch (e) {
+        console.error('Supabase 初始化失败:', e);
+    }
+}
+
+async function checkAuthStatus() {
+    if (!supabaseClient) return;
+    try {
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        if (error) throw error;
+        if (user) {
+            currentUser = user;
+            showUserMenu();
+            await syncData();
+        }
+    } catch (e) {
+        console.error('检查登录状态失败:', e);
+    }
+}
+
+function openAuth() {
+    document.getElementById('auth-modal').classList.add('active');
+}
+
+function closeAuth() {
+    document.getElementById('auth-modal').classList.remove('active');
+}
+
+function showLogin() {
+    document.getElementById('auth-title').textContent = '登录';
+    document.getElementById('login-form').style.display = 'block';
+    document.getElementById('register-form').style.display = 'none';
+}
+
+function showRegister() {
+    document.getElementById('auth-title').textContent = '注册';
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'block';
+}
+
+async function handleLogin() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    
+    if (!email || !password) {
+        showToast('请填写完整信息');
+        return;
+    }
+    
+    try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        
+        currentUser = data.user;
+        closeAuth();
+        showUserMenu();
+        await syncData();
+        showToast('🎉 登录成功！');
+    } catch (e) {
+        showToast('登录失败: ' + e.message);
+    }
+}
+
+async function handleRegister() {
+    const username = document.getElementById('register-username').value;
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    
+    if (!username || !email || !password) {
+        showToast('请填写完整信息');
+        return;
+    }
+    
+    try {
+        const { data: authData, error: authError } = await supabaseClient.auth.signUp({ email, password });
+        if (authError) throw authError;
+        
+        if (authData.user) {
+            await supabaseClient.from('users').insert([{
+                id: authData.user.id,
+                email,
+                username,
+                created_at: new Date().toISOString()
+            }]);
+            
+            currentUser = authData.user;
+            closeAuth();
+            showUserMenu();
+            showToast('🎉 注册成功！');
+        }
+    } catch (e) {
+        showToast('注册失败: ' + e.message);
+    }
+}
+
+async function handleLogout() {
+    try {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
+        
+        currentUser = null;
+        hideUserMenu();
+        showToast('已退出登录');
+    } catch (e) {
+        showToast('退出失败: ' + e.message);
+    }
+}
+
+function showUserMenu() {
+    document.getElementById('user-menu').style.display = 'block';
+    document.getElementById('user-name').textContent = currentUser?.email?.split('@')[0] || '用户';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+}
+
+function hideUserMenu() {
+    document.getElementById('user-menu').style.display = 'none';
+    document.getElementById('user-dropdown').style.display = 'none';
+}
+
+function toggleUserMenu() {
+    const dropdown = document.getElementById('user-dropdown');
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+async function syncData() {
+    if (!currentUser || !supabaseClient) return;
+    
+    showToast('🔄 正在同步数据...');
+    
+    try {
+        const { data: userData, error: userError } = await supabaseClient
+            .from('users')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+        
+        if (!userError && userData) {
+            if (userData.total_tomatoes > userData.totalTomatoes) {
+                userData.totalTomatoes = userData.total_tomatoes;
+                userData.todayTomatoes = userData.today_tomatoes;
+                userData.gardenLevel = userData.garden_level;
+                userData.unlockedPlants = userData.unlocked_plants || [];
+                saveData();
+                updateUI();
+                showToast('📥 已从云端同步数据');
+            } else {
+                await supabaseClient.from('users').update({
+                    total_tomatoes: userData.totalTomatoes,
+                    today_tomatoes: userData.todayTomatoes,
+                    garden_level: userData.gardenLevel,
+                    unlocked_plants: userData.unlockedPlants,
+                    updated_at: new Date().toISOString()
+                }).eq('id', currentUser.id);
+                showToast('📤 已同步数据到云端');
+            }
+        }
+        
+        if (userData.currentPlant) {
+            const { data: plantData, error: plantError } = await supabaseClient
+                .from('plants')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .eq('is_wilted', false)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+            
+            if (!plantError && plantData) {
+                userData.currentPlant = plantData;
+                saveData();
+                updateUI();
+            }
+        }
+    } catch (e) {
+        console.error('数据同步失败:', e);
+        showToast('同步失败: ' + e.message);
+    }
+}
+
 const extraStyle = document.createElement('style');
 extraStyle.textContent = `
     @keyframes fall { to { transform: translateY(150px); } }
@@ -963,6 +1195,12 @@ extraStyle.textContent = `
     }
 `;
 document.head.appendChild(extraStyle);
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+        .then((registration) => console.log('Service Worker registered:', registration))
+        .catch((error) => console.log('Service Worker registration failed:', error));
+}
 
 init();
 </script>

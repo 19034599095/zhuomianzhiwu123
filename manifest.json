@@ -1,0 +1,21 @@
+{
+  "name": "桌面小花园",
+  "short_name": "小花园",
+  "description": "专注番茄钟 + 植物养成小游戏",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f8f3",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%20plant%20in%20pot%20garden%20icon%20green%20simple%20flat%20design&image_size=square",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%20plant%20in%20pot%20garden%20icon%20green%20simple%20flat%20design&image_size=square_hd",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
