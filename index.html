@@ -228,22 +228,40 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
         <div id="auth-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-close" onclick="closeAuth()">×</div>
-                <h3 style="text-align:center;color:#2E7D32;margin-bottom:20px;" id="auth-title">登录</h3>
+                <h3 style="text-align:center;color:#2E7D32;margin-bottom:5px;" id="auth-title">登录</h3>
+                <p style="text-align:center;color:#999;font-size:14px;margin-bottom:20px;" id="auth-subtitle">登录后数据自动同步到云端</p>
                 
                 <div id="auth-form">
                     <div id="login-form">
-                        <input type="email" id="login-email" placeholder="邮箱" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
-                        <input type="password" id="login-password" placeholder="密码" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
-                        <button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="handleLogin()">登录</button>
-                        <p style="text-align:center;color:#999;font-size:14px;">还没有账号？<span style="color:#4CAF50;cursor:pointer;" onclick="showRegister()">立即注册</span></p>
+                        <div style="margin-bottom:12px;">
+                            <input type="email" id="login-email" placeholder="邮箱" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.3s;">
+                            <div id="login-email-error" style="color:#F44336;font-size:12px;margin-top:4px;display:none;">请输入有效的邮箱地址</div>
+                        </div>
+                        <div style="margin-bottom:12px;">
+                            <input type="password" id="login-password" placeholder="密码" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.3s;">
+                            <div id="login-password-error" style="color:#F44336;font-size:12px;margin-top:4px;display:none;">请输入密码</div>
+                        </div>
+                        <div id="login-error" style="color:#F44336;font-size:14px;text-align:center;margin-bottom:12px;display:none;"></div>
+                        <button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="handleLogin()" id="login-btn">登录</button>
+                        <p style="text-align:center;color:#999;font-size:14px;">还没有账号？<span style="color:#4CAF50;cursor:pointer;font-weight:bold;" onclick="showRegister()">立即注册</span></p>
                     </div>
                     
                     <div id="register-form" style="display:none;">
-                        <input type="text" id="register-username" placeholder="用户名" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
-                        <input type="email" id="register-email" placeholder="邮箱" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
-                        <input type="password" id="register-password" placeholder="密码" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
-                        <button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="handleRegister()">注册</button>
-                        <p style="text-align:center;color:#999;font-size:14px;">已有账号？<span style="color:#4CAF50;cursor:pointer;" onclick="showLogin()">立即登录</span></p>
+                        <div style="margin-bottom:12px;">
+                            <input type="text" id="register-username" placeholder="用户名" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.3s;">
+                            <div id="register-username-error" style="color:#F44336;font-size:12px;margin-top:4px;display:none;">请输入用户名</div>
+                        </div>
+                        <div style="margin-bottom:12px;">
+                            <input type="email" id="register-email" placeholder="邮箱" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.3s;">
+                            <div id="register-email-error" style="color:#F44336;font-size:12px;margin-top:4px;display:none;">请输入有效的邮箱地址</div>
+                        </div>
+                        <div style="margin-bottom:12px;">
+                            <input type="password" id="register-password" placeholder="密码（至少6位）" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.3s;">
+                            <div id="register-password-error" style="color:#F44336;font-size:12px;margin-top:4px;display:none;">密码至少需要6位</div>
+                        </div>
+                        <div id="register-error" style="color:#F44336;font-size:14px;text-align:center;margin-bottom:12px;display:none;"></div>
+                        <button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="handleRegister()" id="register-btn">注册</button>
+                        <p style="text-align:center;color:#999;font-size:14px;">已有账号？<span style="color:#4CAF50;cursor:pointer;font-weight:bold;" onclick="showLogin()">立即登录</span></p>
                     </div>
                 </div>
             </div>
@@ -1038,52 +1056,211 @@ function closeAuth() {
 
 function showLogin() {
     document.getElementById('auth-title').textContent = '登录';
+    document.getElementById('auth-subtitle').textContent = '登录后数据自动同步到云端';
     document.getElementById('login-form').style.display = 'block';
     document.getElementById('register-form').style.display = 'none';
+    clearLoginErrors();
+    document.getElementById('login-email').focus();
 }
 
 function showRegister() {
     document.getElementById('auth-title').textContent = '注册';
+    document.getElementById('auth-subtitle').textContent = '创建账号，开启你的花园之旅';
     document.getElementById('login-form').style.display = 'none';
     document.getElementById('register-form').style.display = 'block';
+    clearRegisterErrors();
+    document.getElementById('register-username').focus();
+}
+
+function clearLoginErrors() {
+    document.getElementById('login-email-error').style.display = 'none';
+    document.getElementById('login-password-error').style.display = 'none';
+    document.getElementById('login-error').style.display = 'none';
+    document.getElementById('login-email').style.borderColor = '#ddd';
+    document.getElementById('login-password').style.borderColor = '#ddd';
+}
+
+function clearRegisterErrors() {
+    document.getElementById('register-username-error').style.display = 'none';
+    document.getElementById('register-email-error').style.display = 'none';
+    document.getElementById('register-password-error').style.display = 'none';
+    document.getElementById('register-error').style.display = 'none';
+    document.getElementById('register-username').style.borderColor = '#ddd';
+    document.getElementById('register-email').style.borderColor = '#ddd';
+    document.getElementById('register-password').style.borderColor = '#ddd';
+}
+
+function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
 }
 
 async function handleLogin() {
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
+    const emailInput = document.getElementById('login-email');
+    const passwordInput = document.getElementById('login-password');
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
     
-    if (!email || !password) {
-        showToast('请填写完整信息');
-        return;
+    clearLoginErrors();
+    
+    let isValid = true;
+    
+    if (!email) {
+        document.getElementById('login-email-error').textContent = '请输入邮箱';
+        document.getElementById('login-email-error').style.display = 'block';
+        emailInput.style.borderColor = '#F44336';
+        isValid = false;
+    } else if (!validateEmail(email)) {
+        document.getElementById('login-email-error').textContent = '请输入有效的邮箱地址';
+        document.getElementById('login-email-error').style.display = 'block';
+        emailInput.style.borderColor = '#F44336';
+        isValid = false;
     }
     
+    if (!password) {
+        document.getElementById('login-password-error').textContent = '请输入密码';
+        document.getElementById('login-password-error').style.display = 'block';
+        passwordInput.style.borderColor = '#F44336';
+        isValid = false;
+    } else if (password.length < 6) {
+        document.getElementById('login-password-error').textContent = '密码至少需要6位';
+        document.getElementById('login-password-error').style.display = 'block';
+        passwordInput.style.borderColor = '#F44336';
+        isValid = false;
+    }
+    
+    if (!isValid) return;
+    
+    const btn = document.getElementById('login-btn');
+    const originalText = btn.textContent;
+    btn.textContent = '登录中...';
+    btn.disabled = true;
+    
     try {
+        if (!supabaseClient) {
+            document.getElementById('login-error').textContent = '网络连接失败，请稍后重试';
+            document.getElementById('login-error').style.display = 'block';
+            btn.textContent = originalText;
+            btn.disabled = false;
+            return;
+        }
+        
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        
+        if (error) {
+            let errorMessage = '登录失败';
+            if (error.message.includes('Invalid login credentials')) {
+                errorMessage = '邮箱或密码错误，请重试';
+            } else if (error.message.includes('Email not confirmed')) {
+                errorMessage = '邮箱尚未验证，请检查邮箱';
+            } else {
+                errorMessage = error.message;
+            }
+            document.getElementById('login-error').textContent = errorMessage;
+            document.getElementById('login-error').style.display = 'block';
+            passwordInput.value = '';
+            passwordInput.focus();
+            btn.textContent = originalText;
+            btn.disabled = false;
+            return;
+        }
         
         currentUser = data.user;
         closeAuth();
         showUserMenu();
         await syncData();
         showToast('🎉 登录成功！');
+        btn.textContent = originalText;
+        btn.disabled = false;
     } catch (e) {
-        showToast('登录失败: ' + e.message);
+        document.getElementById('login-error').textContent = '登录失败: ' + e.message;
+        document.getElementById('login-error').style.display = 'block';
+        passwordInput.value = '';
+        passwordInput.focus();
+        btn.textContent = originalText;
+        btn.disabled = false;
     }
 }
 
 async function handleRegister() {
-    const username = document.getElementById('register-username').value;
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
+    const usernameInput = document.getElementById('register-username');
+    const emailInput = document.getElementById('register-email');
+    const passwordInput = document.getElementById('register-password');
+    const username = usernameInput.value.trim();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
     
-    if (!username || !email || !password) {
-        showToast('请填写完整信息');
-        return;
+    clearRegisterErrors();
+    
+    let isValid = true;
+    
+    if (!username) {
+        document.getElementById('register-username-error').textContent = '请输入用户名';
+        document.getElementById('register-username-error').style.display = 'block';
+        usernameInput.style.borderColor = '#F44336';
+        isValid = false;
+    } else if (username.length < 2) {
+        document.getElementById('register-username-error').textContent = '用户名至少需要2个字符';
+        document.getElementById('register-username-error').style.display = 'block';
+        usernameInput.style.borderColor = '#F44336';
+        isValid = false;
     }
     
+    if (!email) {
+        document.getElementById('register-email-error').textContent = '请输入邮箱';
+        document.getElementById('register-email-error').style.display = 'block';
+        emailInput.style.borderColor = '#F44336';
+        isValid = false;
+    } else if (!validateEmail(email)) {
+        document.getElementById('register-email-error').textContent = '请输入有效的邮箱地址';
+        document.getElementById('register-email-error').style.display = 'block';
+        emailInput.style.borderColor = '#F44336';
+        isValid = false;
+    }
+    
+    if (!password) {
+        document.getElementById('register-password-error').textContent = '请输入密码';
+        document.getElementById('register-password-error').style.display = 'block';
+        passwordInput.style.borderColor = '#F44336';
+        isValid = false;
+    } else if (password.length < 6) {
+        document.getElementById('register-password-error').textContent = '密码至少需要6位';
+        document.getElementById('register-password-error').style.display = 'block';
+        passwordInput.style.borderColor = '#F44336';
+        isValid = false;
+    }
+    
+    if (!isValid) return;
+    
+    const btn = document.getElementById('register-btn');
+    const originalText = btn.textContent;
+    btn.textContent = '注册中...';
+    btn.disabled = true;
+    
     try {
+        if (!supabaseClient) {
+            document.getElementById('register-error').textContent = '网络连接失败，请稍后重试';
+            document.getElementById('register-error').style.display = 'block';
+            btn.textContent = originalText;
+            btn.disabled = false;
+            return;
+        }
+        
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({ email, password });
-        if (authError) throw authError;
+        
+        if (authError) {
+            let errorMessage = '注册失败';
+            if (authError.message.includes('already registered')) {
+                errorMessage = '该邮箱已被注册';
+            } else {
+                errorMessage = authError.message;
+            }
+            document.getElementById('register-error').textContent = errorMessage;
+            document.getElementById('register-error').style.display = 'block';
+            btn.textContent = originalText;
+            btn.disabled = false;
+            return;
+        }
         
         if (authData.user) {
             await supabaseClient.from('users').insert([{
