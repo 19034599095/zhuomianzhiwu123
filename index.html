@@ -1329,22 +1329,40 @@ async function syncData() {
     showToast('🔄 正在同步数据...');
     
     try {
-        const { data: userData, error: userError } = await supabaseClient
+        const { data: dbUser, error: userError } = await supabaseClient
             .from('users')
             .select('*')
             .eq('id', currentUser.id)
             .single();
         
-        if (!userError && userData) {
-            if (userData.total_tomatoes > userData.totalTomatoes) {
-                userData.totalTomatoes = userData.total_tomatoes;
-                userData.todayTomatoes = userData.today_tomatoes;
-                userData.gardenLevel = userData.garden_level;
-                userData.unlockedPlants = userData.unlocked_plants || [];
+        if (userError) {
+            if (userError.code === 'PGRST116' || userError.message.includes('no rows')) {
+                await supabaseClient.from('users').insert({
+                    id: currentUser.id,
+                    email: currentUser.email,
+                    username: currentUser.email?.split('@')[0] || '花园主人',
+                    total_tomatoes: userData.totalTomatoes,
+                    today_tomatoes: userData.todayTomatoes,
+                    garden_level: userData.gardenLevel,
+                    unlocked_plants: userData.unlockedPlants
+                });
+                showToast('📤 已同步数据到云端');
+            } else {
+                throw userError;
+            }
+        } else if (dbUser) {
+            const cloudTomatoes = dbUser.total_tomatoes || 0;
+            const localTomatoes = userData.totalTomatoes || 0;
+            
+            if (cloudTomatoes > localTomatoes) {
+                userData.totalTomatoes = cloudTomatoes;
+                userData.todayTomatoes = dbUser.today_tomatoes || 0;
+                userData.gardenLevel = dbUser.garden_level || 1;
+                userData.unlockedPlants = dbUser.unlocked_plants || [];
                 saveData();
                 updateUI();
                 showToast('📥 已从云端同步数据');
-            } else {
+            } else if (localTomatoes > cloudTomatoes) {
                 await supabaseClient.from('users').update({
                     total_tomatoes: userData.totalTomatoes,
                     today_tomatoes: userData.todayTomatoes,
@@ -1353,6 +1371,8 @@ async function syncData() {
                     updated_at: new Date().toISOString()
                 }).eq('id', currentUser.id);
                 showToast('📤 已同步数据到云端');
+            } else {
+                showToast('✅ 数据已同步');
             }
         }
         
@@ -1374,7 +1394,7 @@ async function syncData() {
         }
     } catch (e) {
         console.error('数据同步失败:', e);
-        showToast('同步失败: ' + e.message);
+        showToast('同步失败: ' + (e.message || '未知错误'));
     }
 }
 
