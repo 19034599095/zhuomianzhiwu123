@@ -260,7 +260,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
     <script>
 const PLANTS = [
     { id: 1, name: '多肉', emoji: '🌵', minTime: 3, maxTime: 8, desc: '多肉植物耐旱易养，叶片肥厚饱满', tips: '需要充足阳光，但要避免暴晒' },
@@ -1000,9 +1000,14 @@ let currentUser = null;
 
 function initSupabaseClient() {
     try {
-        supabaseClient = window.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('Supabase 客户端初始化成功');
-        checkAuthStatus();
+        if (window.supabase && window.supabase.createClient) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase 客户端初始化成功');
+            checkAuthStatus();
+        } else {
+            console.error('Supabase SDK 未加载，请检查网络连接');
+            setTimeout(initSupabaseClient, 2000);
+        }
     } catch (e) {
         console.error('Supabase 初始化失败:', e);
     }
